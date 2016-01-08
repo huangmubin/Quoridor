@@ -116,7 +116,7 @@ class GameModel: NSObject {
     /** The current player */
     var player: Bool {
         let firstPlayer = gameStack[0].h
-        return firstPlayer == (gameStack.count % 2 == 0) ? firstPlayer : !firstPlayer
+        return gameStack.count % 2 == 0 ? firstPlayer : !firstPlayer
     }
     
     /** The game state */

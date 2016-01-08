@@ -43,6 +43,11 @@ class GameAi: NSObject {
             return DataModel.idConvertToPlayer(player[i], player: true)
         }
         
+        // 计算是否可以去除自己的最长路径。
+        if let wall = longPathForPlayer() {
+            return wall
+        }
+        
         return AiCount()
     }
     
@@ -99,35 +104,27 @@ class GameAi: NSObject {
         allPathForPlayer([path], queue: [path], end: topEnd)
         
         // 检查路径差
-        if allPaths.count > 1 {
-            // 获取最长最短路径信息
-            var maxPathCount = 0
-            var maxPathIndex = 0
-            var minPathCount = Int.max
-            let pathCount = allPaths.count
+        if allPaths.count == 2 {
+            // 获取最长路径信息
+            let count0 = allPaths[0].count
+            let count1 = allPaths[1].count
+            let max = count0 > count1 ? allPaths[0] : allPaths[1]
+            let min = count0 > count1 ? allPaths[1] : allPaths[0]
             
-            for (index, path) in allPaths.enumerate() {
-                if path.count > maxPathCount {
-                    maxPathCount = path.count
-                    maxPathIndex = index
-                }
-                if path.count < minPathCount {
-                    minPathCount = path.count
-                }
-            }
-            
-            // 对比路径
-            if minPathCount < maxPathCount-5 {
-                let paths = allPaths[maxPathIndex]
-                for (var i = paths.count-1; i > 0; i--) {
-                    if let wall = wallData([paths[i], paths[i-1]]) {
+            if max.count - min.count > 4 {
+                var i: Int
+                for (i = max.count-1; i > 0; i--) {
+                    if let wall = wallData([max[i], max[i-1]]) {
                         GameModel.shared.removeNearLink(wall)
-                        // 查看最长路径
                         allPaths = [[Int]]()
                         allPathForPlayer([path], queue: [path], end: topEnd)
-                        if allPaths.count < pathCount {
-                            return wall
+                        if allPaths.count == 1 {
+                            if allPaths[0].count == min.count {
+                                return wall
+                            }
                         }
+                        GameModel.shared.removeGameWalls(wall)
+                        GameModel.shared.addNearLink(wall)
                     }
                 }
             }
@@ -135,6 +132,23 @@ class GameAi: NSObject {
         return nil
     }
     
+    
+    /*
+    // 查找阻挡对方的最佳木板位置
+    for (var i = 0; i < rival.count-1; i++) {
+    if let wall = wallData([rival[i], rival[i+1]]) {
+    game.removeNearLink(wall)
+    let rivalTest = pathForPlayer(false).count
+    if rivalTest > maxPath {
+    if player.count >= pathForPlayer(true).count {
+    maxPath = rivalTest
+    bestWall = wall
+    }
+    }
+    game.removeGameWalls(wall)
+    game.addNearLink(wall)
+    }
+    }*/
     
     /** 返回墙壁可能解 */
     private class func wallData(var ids: [Int]) -> DataModel? {
