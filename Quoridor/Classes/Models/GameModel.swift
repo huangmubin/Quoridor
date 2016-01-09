@@ -186,14 +186,14 @@ class GameModel: NSObject {
     private func initGameNearsAndWalls() {
         gameNears = [[Int]]()
         // GameNears
-        for i in 0 ..< 82 {
+        for i in 0 ..< 81 {
             gameNears.append([])
             for j in [i+1,i-1] {
-                if j > 0 && j < 81 && (j / 9) == (i / 9) {
+                if j >= 0 && j < 81 && (j / 9) == (i / 9) {
                     gameNears[i].append(j)
                 }
             }
-            if i+9 < 82 {
+            if i+9 < 81 {
                 gameNears[i].append(i+9)
             }
             if i-9 >= 0 {

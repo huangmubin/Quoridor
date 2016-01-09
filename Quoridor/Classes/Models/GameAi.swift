@@ -1,10 +1,10 @@
 import UIKit
 
-func ==(lhs: Path, rhs: Path) -> Bool {
+func ==(lhs: Node, rhs: Node) -> Bool {
     return lhs.data == rhs.data
 }
 
-struct Path: Hashable {
+struct Node: Hashable {
     var data: Int
     var parent: Int
     var hashValue: Int {
@@ -20,7 +20,7 @@ class GameAi: NSObject {
     class func pathForPlayer(play: Bool) -> [Int] {
         let player = play ? GameModel.shared.topPlayer.id : GameModel.shared.downPlayer.id
         let end = play ? topEnd : downEnd
-        return pathForPlayer(Path(data: player, parent: -1), end: end)
+        return pathForPlayer(Node(data: player, parent: -1), end: end)
     }
     
     /** 获取下一步 */
@@ -43,12 +43,20 @@ class GameAi: NSObject {
             return DataModel.idConvertToPlayer(player[i], player: true)
         }
         
-        // 计算是否可以去除自己的最长路径。
-        if let wall = longPathForPlayer() {
-            return wall
-        }
+//        // 计算是否可以去除自己的最长路径。
+//        if let wall = longPathForPlayer() {
+//            return wall
+//        }
         
         return AiCount()
+    }
+    
+    
+    class func allPath(player: Bool) -> [[Int]]? {
+        let playId = player ? GameModel.shared.topPlayer.id : GameModel.shared.downPlayer.id
+        let node = Node(data: playId, parent: -1)
+        let end  = player ? topEnd : downEnd
+        return allPathForPlayer([node], scanQueue: [node], end: end)
     }
     
     // MARK: - Ai
@@ -100,7 +108,7 @@ class GameAi: NSObject {
         // 获取完全路径
         allPaths = [[Int]]()
         let playerId = GameModel.shared.topPlayer.id
-        let path = Path(data: playerId, parent: -1)
+        let path = Node(data: playerId, parent: -1)
         allPathForPlayer([path], queue: [path], end: topEnd)
         
         // 检查路径差
@@ -111,7 +119,7 @@ class GameAi: NSObject {
             let max = count0 > count1 ? allPaths[0] : allPaths[1]
             let min = count0 > count1 ? allPaths[1] : allPaths[0]
             
-            if max.count - min.count > 4 {
+            if max.count - min.count > 3 {
                 var i: Int
                 for (i = max.count-1; i > 0; i--) {
                     if let wall = wallData([max[i], max[i-1]]) {
@@ -120,6 +128,7 @@ class GameAi: NSObject {
                         allPathForPlayer([path], queue: [path], end: topEnd)
                         if allPaths.count == 1 {
                             if allPaths[0].count == min.count {
+                                print("longPathForPlayer")
                                 return wall
                             }
                         }
@@ -131,24 +140,6 @@ class GameAi: NSObject {
         }
         return nil
     }
-    
-    
-    /*
-    // 查找阻挡对方的最佳木板位置
-    for (var i = 0; i < rival.count-1; i++) {
-    if let wall = wallData([rival[i], rival[i+1]]) {
-    game.removeNearLink(wall)
-    let rivalTest = pathForPlayer(false).count
-    if rivalTest > maxPath {
-    if player.count >= pathForPlayer(true).count {
-    maxPath = rivalTest
-    bestWall = wall
-    }
-    }
-    game.removeGameWalls(wall)
-    game.addNearLink(wall)
-    }
-    }*/
     
     /** 返回墙壁可能解 */
     private class func wallData(var ids: [Int]) -> DataModel? {
@@ -189,10 +180,10 @@ class GameAi: NSObject {
     // MARK: - 最短路径
     
     /** 获取最短路径 */
-    private class func pathForPlayer(player: Path, end: (Int)->Bool) -> [Int] {
+    private class func pathForPlayer(player: Node, end: (Int)->Bool) -> [Int] {
         var logs = [player]
         var queue = [player]
-        var finish: Path?
+        var finish: Node?
         
         // 查找最短路径
         while !queue.isEmpty {
@@ -205,8 +196,8 @@ class GameAi: NSObject {
                 let near = GameModel.shared.gameNears[path.data]
                 for n in near {
                     if !logs.contains({ $0.data == n }) {
-                        logs.append(Path(data: n, parent: path.data))
-                        queue.append(Path(data: n, parent: path.data))
+                        logs.append(Node(data: n, parent: path.data))
+                        queue.append(Node(data: n, parent: path.data))
                     }
                 }
             }
@@ -232,11 +223,100 @@ class GameAi: NSObject {
     }
     
     // MARK: - 获取全路径
+    
+    /** 获取全路径 */
+    private class func allPathForPlayer(var logs: [Node], var scanQueue: [Node], end: (Int)->Bool ) -> [[Int]]? {
+        // 0. 循环处理搜索队列，直到队列为空时就退出处理程序
+        while !scanQueue.isEmpty {
+            // 0.0 检查队列是否包含终点目标，是的话输出路径
+            for queueNode in scanQueue {
+                if end(queueNode.data) {
+                    // 0.0.1 输出路径
+                    var node = queueNode
+                    var path = [queueNode.data]
+                    while node.parent != -1 {
+                        let nodeIndexOfLogs = logs.indexOf({ $0.data == node.parent })!
+                        node = logs[nodeIndexOfLogs]
+                        path.append(node.data)
+                    }
+                    return [path]
+                }
+            }
+            
+            // 0.1 对队列进行扩展扫描，将没有阻隔的扩展节点组合成集合。
+            /** 所有节点的集合数组 */
+            var nodeSets = [Set<Node>]()
+            
+            for scanNode in scanQueue {
+                var nodeScopes = [Node]()
+                
+                let nodeNears = GameModel.shared.gameNears[scanNode.data]
+                for scope in nodeNears {
+                    if !logs.contains({ $0.data == scope }) {
+                        nodeScopes.append(Node(data: scope, parent: scanNode.data))
+                    }
+                }
+                
+                if nodeScopes.count == 2 {
+                    let absValue = abs(nodeScopes[0].data - nodeScopes[1].data)
+                    if absValue == 18 || absValue == 2 {
+                        union(&nodeSets, newSet: [nodeScopes[0]])
+                        union(&nodeSets, newSet: [nodeScopes[1]])
+                    } else {
+                        union(&nodeSets, newSet: Set(nodeScopes))
+                    }
+                } else if nodeScopes.count > 0 {
+                    union(&nodeSets, newSet: Set(nodeScopes))
+                } else {
+                    return nil
+                }
+            }
+            
+            // 0.2 对所有节点的集合数组进行判定，假如出现分支，则对每个分支进行迭代处理，然后退出。否则更新搜索队列。
+            printPath0(nodeSets)
+            
+            if nodeSets.count > 1 {
+                var finishPath = [[Int]]()
+                for nodeSet in nodeSets {
+                    // 0.2.1 计算出该分组的父节点，作为新的logs
+                    var nodes = nodeSet
+                    var pathSet = Set(nodes)
+                    while !nodes.isEmpty {
+                        let node = nodes.removeFirst()
+                        pathSet.insert(node)
+                        if node.parent != -1 {
+                            let indexOfLogs = logs.indexOf({ $0.data == node.parent })!
+                            nodes.insert(logs[indexOfLogs])
+                        }
+                    }
+                    printPath(pathSet.reverse())
+                    print("==========----------====")
+                    printPath(nodeSet.reverse())
+                    // 0.2.2 获取分支路径
+                    if let path = allPathForPlayer(pathSet.reverse(), scanQueue: nodeSet.reverse(), end: end) {
+                        finishPath += path
+                    }
+                }
+                if finishPath.count > 0 {
+                    return finishPath
+                } else {
+                    return nil
+                }
+            } else if nodeSets.count > 0 {
+                logs += nodeSets[0].reverse()
+                scanQueue = nodeSets[0].reverse()
+            } else {
+                return nil
+            }
+        }
+        return nil
+    }
+    
     /** 路径记录 */
     private static var allPaths = [[Int]]()
     
     /** 获取棋子全路径 */
-    private class func allPathForPlayer(var logs: [Path], var queue: [Path], end: (Int)->Bool) {
+    private class func allPathForPlayer(var logs: [Node], var queue: [Node], end: (Int)->Bool) {
         while !queue.isEmpty {
             // 检查是否抵达终点，是的话输出路径
             for path in queue {
@@ -254,16 +334,16 @@ class GameAi: NSObject {
             }
             
             /** 储存扩展集合 */
-            var pathSets = [Set<Path>]()
+            var pathSets = [Set<Node>]()
             
             // 计算相邻区域集合
             for path in queue {
                 // 把棋子的相邻区域获取出来，查看是否有已经包含的区域
                 let scopes = GameModel.shared.gameNears[path.data]
-                var newScopes = [Path]()
+                var newScopes = [Node]()
                 for scope in scopes {
                     if !logs.contains({ $0.data == scope }) {
-                        newScopes.append(Path(data: scope, parent: path.data))
+                        newScopes.append(Node(data: scope, parent: path.data))
                     }
                 }
                 // 把区域建立集合并跟pathSets进行交集操作
@@ -300,23 +380,42 @@ class GameAi: NSObject {
     
     /** 这本来应该是一个开局棋谱……然而，随便了。 */
     private class func opening() -> DataModel {
+        // 获取最短路径
         let player = pathForPlayer(true)
+        // 计算移动几率
         let isMove = Int(arc4random() % 10) < 7
-        if isMove {
+        // 获取完全路径
+        allPaths = [[Int]]()
+        let playerId = GameModel.shared.downPlayer.id
+        let path = Node(data: playerId, parent: -1)
+        allPathForPlayer([path], queue: [path], end: downEnd)
+        let allPathCount = allPaths.count
+        
+        if isMove || allPathCount >= 2 {
             return DataModel.idConvertToPlayer(player[1], player: true)
         } else {
             var x: Int
             var y: Int
             var h: Bool
             while true {
+                // 计算出一个随机木板位置，并检测是否合理
                 x = Int(arc4random() % 8)
                 y = Int(arc4random() % 8)
                 h = Int(arc4random() % 2) == 0
                 let data = DataModel(x: x, y: y, h: h)
                 guard GameModel.shared.iWallIsAllow(data) else { continue }
+                
+                // 计算该木板是否会阻挡到自己。
                 GameModel.shared.removeNearLink(data)
                 let test = pathForPlayer(true)
                 guard test.count <= player.count else { GameModel.shared.addNearLink(data); continue }
+                
+                // 计算该木板能否给对方增加变数，否则就不增加
+                allPaths = [[Int]]()
+                allPathForPlayer([path], queue: [path], end: downEnd)
+                guard allPaths.count >= 2 else { GameModel.shared.addNearLink(data); continue }
+                
+                // 还原设置，返回木板
                 GameModel.shared.addNearLink(data)
                 return data
             }
@@ -336,7 +435,7 @@ class GameAi: NSObject {
     }
     
     /** 把集合进行合并操作 */
-    private class func union(inout allSets: [Set<Path>], newSet: Set<Path>) {
+    private class func union(inout allSets: [Set<Node>], newSet: Set<Node>) {
         var i: Int
         var hasUnion: Bool = false
         
@@ -363,5 +462,29 @@ class GameAi: NSObject {
             allSets.append(newSet)
         }
     }
+    
+    /** 输出路径位置 */
+    class func printPath(nodes: [Node]) {
+        var board = [Int]()
+        for _ in 0 ..< 81 {
+            board.append(0)
+        }
+        for node in nodes {
+            board[node.data] = 1
+        }
 
+        for (i,n) in board.enumerate() {
+            print("\(n) ", separator: "", terminator: "")
+            if (i + 1) % 9 == 0 {
+                print("")
+            }
+        }
+    }
+    
+    class func printPath0(nodesX: [Set<Node>]) {
+        for nodes in nodesX {
+            print("================")
+            printPath(nodes.reverse())
+        }
+    }
 }

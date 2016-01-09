@@ -23,16 +23,34 @@ class TouchView: UIView {
         let player = model.player ? model.topPlayer : model.downPlayer
         let cellSize = bounds.height / 11
         let distance = cellSize * 1.25
-        let x = CGFloat(player.x - 1) * distance
-        let y = CGFloat(player.y - 1) * distance
+        var location: CGPoint
         
-        // 判断棋子是否棋子所在区域
-        let location = locationTouch(touches)
-        if location.x >= x && location.x <= (x + cellSize * 3.5) {
-            if location.y >= y && location.y <= (y + cellSize * 3.5) {
-                delegate?.touchAddPlayer?(location)
-                touchType = false
-                return
+        // 假如是在小屏幕中，则扩大棋子区域。否则不需要。
+        if kOffset {
+            let x = CGFloat(player.x - 1) * distance
+            let y = CGFloat(player.y - 1) * distance
+            
+            // 判断棋子是否棋子所在区域
+            location = locationTouch(touches)
+            if location.x >= x && location.x <= (x + cellSize * 3.5) {
+                if location.y >= y && location.y <= (y + cellSize * 3.5) {
+                    delegate?.touchAddPlayer?(location)
+                    touchType = false
+                    return
+                }
+            }
+        } else {
+            let x = CGFloat(player.x) * distance
+            let y = CGFloat(player.y) * distance
+            
+            // 判断棋子是否棋子所在区域
+            location = locationTouch(touches)
+            if location.x >= x && location.x <= (x + cellSize) {
+                if location.y >= y && location.y <= (y + cellSize) {
+                    delegate?.touchAddPlayer?(location)
+                    touchType = false
+                    return
+                }
             }
         }
         
