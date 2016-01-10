@@ -57,7 +57,7 @@ class TouchView: UIView {
         // 检查木板是否已经用光
         touchType = true
         if GameModel.shared.iWallIsEmpty() {
-            
+            touchType = false
         } else {
             delegate?.touchAddWood?(location)
         }

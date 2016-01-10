@@ -22,18 +22,10 @@ class Screen: UIView {
     /** 显示动画 */
     private func showSelf() {
         self.hidden = false
-//        UIView.animateKeyframesWithDuration(0.5, delay: 0, options: .CalculationModeLinear, animations: { () -> Void in
-//            self.alpha = 1
-//            }, completion: nil)
     }
     /** 隐藏动画 */
     private func hiddenSelf() {
         self.hidden = true
-//        UIView.animateKeyframesWithDuration(0.5, delay: 0, options: .CalculationModeLinear, animations: { () -> Void in
-//            self.alpha = 0
-//            }) { (finish) -> Void in
-//                self.hidden = true
-//        }
     }
     // MARK: - DrawRect
     

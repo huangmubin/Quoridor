@@ -158,8 +158,8 @@
 		9CCB3BA31C3E494700B89814 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				9CCB3BA61C3E496400B89814 /* DataModel.swift */,
 				9CCB3BA71C3E496400B89814 /* GameAi.swift */,
+				9CCB3BA61C3E496400B89814 /* DataModel.swift */,
 				9CCB3BA81C3E496400B89814 /* GameModel.swift */,
 				9CCB3BA91C3E496400B89814 /* GameModel+Action.swift */,
 				9CCB3BAA1C3E496400B89814 /* GameModel+Logic.swift */,
