@@ -71,37 +71,38 @@ class GameAi: NSObject {
         var maxPath = rival.count
         var bestWall: DataModel?
         
-        if player.count > rival.count {
-            // 查找阻挡对方的最佳木板位置
-            for (var i = 0; i < rival.count-1; i++) {
-                if let wall = wallData([rival[i], rival[i+1]]) {
-                    game.removeNearLink(wall)
-                    let rivalTest = pathForPlayer(false).count
-                    if rivalTest > maxPath {
-                        if player.count >= pathForPlayer(true).count {
-                            maxPath = rivalTest
-                            bestWall = wall
-                        }
+        // 查找阻挡对方的最佳木板位置
+        for (var i = 0; i < rival.count-1; i++) {
+            if let wall = wallData([rival[i], rival[i+1]]) {
+                game.removeNearLink(wall)
+                let rivalTest = pathForPlayer(false).count
+                if rivalTest > maxPath {
+                    if player.count >= pathForPlayer(true).count {
+                        maxPath = rivalTest
+                        bestWall = wall
                     }
-                    game.removeGameWalls(wall)
-                    game.addNearLink(wall)
                 }
+                game.removeGameWalls(wall)
+                game.addNearLink(wall)
             }
         }
         
         // 假如寻找到合适的放置木板位置，则放置木板。否则找出下一步最佳位置。
         if let _ = bestWall {
-            return bestWall!
-        } else {
-            var i: Int
-            let scope = GameModel.shared.scopeForPlayer(GameModel.shared.topPlayer.id, rival: GameModel.shared.downPlayer.id)
-            for (i = player.count-1; i > 0; i--) {
-                if scope.contains(player[i]) {
-                    break
-                }
+            if player.count > rival.count || maxPath > rival.count+2 {
+                return bestWall!
             }
-            return DataModel.idConvertToPlayer(player[i], player: true)
         }
+        
+        // 找出下一步进行行走
+        var i: Int
+        let scope = GameModel.shared.scopeForPlayer(GameModel.shared.topPlayer.id, rival: GameModel.shared.downPlayer.id)
+        for (i = player.count-1; i > 0; i--) {
+            if scope.contains(player[i]) {
+                break
+            }
+        }
+        return DataModel.idConvertToPlayer(player[i], player: true)
     }
     
     
