@@ -34,8 +34,8 @@ class TouchView: UIView {
             location = locationTouch(touches)
             if location.x >= x && location.x <= (x + cellSize * 3.5) {
                 if location.y >= y && location.y <= (y + cellSize * 3.5) {
-                    delegate?.touchAddPlayer?(location)
                     touchType = false
+                    delegate?.touchAddPlayer?(location)
                     return
                 }
             }
@@ -47,8 +47,8 @@ class TouchView: UIView {
             location = locationTouch(touches)
             if location.x >= x && location.x <= (x + cellSize) {
                 if location.y >= y && location.y <= (y + cellSize) {
-                    delegate?.touchAddPlayer?(location)
                     touchType = false
+                    delegate?.touchAddPlayer?(location)
                     return
                 }
             }
@@ -58,6 +58,7 @@ class TouchView: UIView {
         touchType = true
         if GameModel.shared.iWallIsEmpty() {
             touchType = false
+            delegate?.touchAddPlayer?(location)
         } else {
             delegate?.touchAddWood?(location)
         }

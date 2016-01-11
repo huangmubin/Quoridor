@@ -6,16 +6,20 @@ class WallPrompt: UIView {
     
     /** 添加提示的木板视图到游戏中 */
     func add(location: CGPoint) {
-        move(location)
-        setNeedsDisplay()
-        layer.addSublayer(subLayer)
+        let move = FrameCalculator.wallFrameForTouch(location)
+        subView.frame = move.0
+        subView.transform = CGAffineTransformMakeRotation(move.1)
+        addSubview(subView)
+        self.move(location)
     }
     
     /** 移动木板视图，如果到不可放置区域会变色 */
     func move(location: CGPoint) {
         let move = FrameCalculator.wallFrameForTouch(location)
-        subLayer.frame = move.0
-        subLayer.transform = CATransform3DMakeRotation(move.1, 0, 0, 1)
+        UIView.animateWithDuration(0.2) {
+            self.subView.frame = move.0
+            self.subView.transform = CGAffineTransformMakeRotation(move.1)
+        }
         let data = FrameCalculator.wallDataForTouch(location)
         if GameModel.shared.iWallIsAllow(data) {
             wallLayer.backgroundColor = kWallColor.CGColor
@@ -26,7 +30,7 @@ class WallPrompt: UIView {
     
     /** 结束移动，如果区域可以放置则返回数据，否则nil */
     func endMove(location: CGPoint) -> DataModel? {
-        subLayer.removeFromSuperlayer()
+        subView.removeFromSuperview()
         let data = FrameCalculator.wallDataForTouch(location)
         if GameModel.shared.iWallIsAllow(data) {
             return data
@@ -37,13 +41,13 @@ class WallPrompt: UIView {
     
     /** 取消移动 */
     func cancelMove() {
-        subLayer.removeFromSuperlayer()
+        subView.removeFromSuperview()
     }
     
     // MARK: - Data
     
-    private var subLayer: CALayer!
     private var wallLayer: CALayer!
+    private var subView: UIView!
     
     // MARK: - Init Function
     
@@ -57,14 +61,15 @@ class WallPrompt: UIView {
         let cellSize = (UIScreen.mainScreen().bounds.width - 40) / 11
         let distance = cellSize * 0.25 + 2
         
-        subLayer       = CALayer()
-        subLayer.frame = FrameCalculator.wallFrameForTouch(CGPointZero).0
+        subView = UIView(frame: FrameCalculator.wallFrameForTouch(CGPointZero).0)
+        subView.backgroundColor = UIColor.clearColor()
         
-        wallLayer   = CALayer()
-        wallLayer.frame = CGRectMake(subLayer.frame.width / 2 - distance / 2, 0, distance, cellSize * 2.25)
+        wallLayer = CALayer()
+        wallLayer.frame = CGRectMake(subView.frame.width / 2 - distance / 2, 0, distance, cellSize * 2.25)
         wallLayer.cornerRadius    = distance / 2
         wallLayer.backgroundColor = kWallColor.CGColor
-        subLayer.addSublayer(wallLayer)
+        
+        subView.layer.addSublayer(wallLayer)
     }
 
     

@@ -175,10 +175,10 @@
 				9CCB3BB41C3E4A5E00B89814 /* ChessPlayer.swift */,
 				9CCB3BB51C3E4A5E00B89814 /* ChessWall.swift */,
 				9CCB3BB61C3E4A5E00B89814 /* Demonstration.swift */,
-				9CCB3BB71C3E4A5E00B89814 /* EndScreen.swift */,
 				9CCB3BB81C3E4A5E00B89814 /* PlayerPrompt.swift */,
-				9CCB3BB91C3E4A5E00B89814 /* Screen.swift */,
 				9CCB3BBA1C3E4A5E00B89814 /* WallPrompt.swift */,
+				9CCB3BB91C3E4A5E00B89814 /* Screen.swift */,
+				9CCB3BB71C3E4A5E00B89814 /* EndScreen.swift */,
 			);
 			name = Views;
 			sourceTree = "<group>";

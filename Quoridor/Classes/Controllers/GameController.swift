@@ -159,10 +159,10 @@ class GameController: UIViewController, TouchViewDelegate {
     }
     
     @IBAction func stepGameAction(sender: UIButton) {
-//        GameModel.shared.color = !GameModel.shared.color
-//        updateGameColor()
-        print("=====================")
-        print(GameAi.allPath(GameModel.shared.player))
+        GameModel.shared.color = !GameModel.shared.color
+        updateGameColor()
+//        print("=====================")
+//        print(GameAi.allPath(GameModel.shared.player))
     }
     
     @IBAction func woodGameAction(sender: UIButton) {

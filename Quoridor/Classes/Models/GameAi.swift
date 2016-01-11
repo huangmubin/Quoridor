@@ -127,7 +127,6 @@ class GameAi: NSObject {
                                 if allPathTemp.count == 1 {
                                     if allPaths[0].count == min.count {
                                         if pathForPlayer(false).count > 0 {
-                                            print("longPathForPlayer")
                                             return wall
                                         }
                                     }
