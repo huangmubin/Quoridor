@@ -32,15 +32,7 @@ class GameAi: NSObject {
         
         // 木板下完了，那就只能任人宰割了。
         if GameModel.shared.iWallIsEmpty() {
-            let player = pathForPlayer(true)
-            var i: Int
-            let scope = GameModel.shared.scopeForPlayer(GameModel.shared.topPlayer.id, rival: GameModel.shared.downPlayer.id)
-            for (i = player.count-1; i > 0; i--) {
-                if scope.contains(player[i]) {
-                    break
-                }
-            }
-            return DataModel.idConvertToPlayer(player[i], player: true)
+            return moveAi()
         }
         
         // 计算是否可以去除自己的最长路径。
@@ -48,7 +40,17 @@ class GameAi: NSObject {
             return wall
         }
         
-        return AiCount()
+        // 计算阻挡对方的最佳木板位置
+        if let wall = AiCount() {
+            return wall
+        }
+        
+        // 阻止对方延长自己的路径
+        if let wall = strongSelfWall() {
+            return wall
+        }
+        
+        return moveAi()
     }
     
     
@@ -61,8 +63,43 @@ class GameAi: NSObject {
     
     // MARK: - Ai
     
+    /** 缩短自己的路径 */
+    private class func strongSelfWall() -> DataModel? {
+        let player = pathForPlayer(true)
+        var i: Int
+        for (i = 0; i < player.count-1; i++) {
+            if let wall = wallData([player[i], player[i+1]]) {
+                GameModel.shared.removeNearLink(wall)
+                let pathTemp = pathForPlayer(true)
+                GameModel.shared.removeGameWalls(wall)
+                GameModel.shared.addNearLink(wall)
+                if pathTemp.count > player.count+1 {
+                    for offsetX in [0,1,-1] {
+                        for offsetY in [0,1,-1] {
+                            for offsetH in [true, false] {
+                                let guardWall = DataModel(x: wall.x + offsetX, y: wall.y + offsetY, h: offsetH)
+                                if GameModel.shared.iWallIsAllow(guardWall) {
+                                    GameModel.shared.removeNearLink(guardWall)
+                                    let guardPath = pathForPlayer(true)
+                                    GameModel.shared.addNearLink(guardWall)
+                                    if guardPath.count == player.count {
+                                        print("=========")
+                                        print(guardPath)
+                                        print(player)
+                                        return guardWall
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return nil
+    }
+    
     /** 计算下一步的最佳路径 */
-    private class func AiCount() -> DataModel {
+    private class func AiCount() -> DataModel? {
         let game = GameModel.shared
         
         let player = pathForPlayer(true)
@@ -94,7 +131,13 @@ class GameAi: NSObject {
             }
         }
         
-        // 找出下一步进行行走
+        return nil
+    }
+    
+    
+    /** 计算下一步行走的最佳棋子 */
+    private class func moveAi() -> DataModel {
+        let player = pathForPlayer(true)
         var i: Int
         let scope = GameModel.shared.scopeForPlayer(GameModel.shared.topPlayer.id, rival: GameModel.shared.downPlayer.id)
         for (i = player.count-1; i > 0; i--) {
@@ -104,7 +147,6 @@ class GameAi: NSObject {
         }
         return DataModel.idConvertToPlayer(player[i], player: true)
     }
-    
     
     /** 检查自己是不是有必须要档的路径存在 */
     private class func longPathForPlayer() -> DataModel? {
